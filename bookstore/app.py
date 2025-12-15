@@ -23,15 +23,14 @@ def get_categories():
 # -----------------------------
 @app.route('/')
 def home():
-    categories = get_categories()
-    return render_template("index.html", categories=categories)
+    return render_template("index.html", categories=get_categories())
 
 @app.route('/category')
 def category():
     category_id = request.args.get("categoryId", type=int)
-    
+
     conn = get_db_connection()
-    selected_books = conn.execute(
+    books = conn.execute(
         "SELECT * FROM books WHERE categoryId = ?",
         (category_id,)
     ).fetchall()
@@ -41,27 +40,25 @@ def category():
         "category.html",
         selectedCategory=category_id,
         categories=get_categories(),
-        books=selected_books
+        books=books
     )
 
-@app.route('/search', methods=["POST"])
+@app.route('/search', methods=['POST'])
 def search():
     term = request.form.get("search", "").strip()
 
     conn = get_db_connection()
-    results = conn.execute(
+    books = conn.execute(
         "SELECT * FROM books WHERE lower(title) LIKE lower(?)",
         (f"%{term}%",)
     ).fetchall()
     conn.close()
 
     return render_template(
-        "category.html",
-        selectedCategory=None,
+        "search.html",
         categories=get_categories(),
-        books=results,
-        searchTerm=term,
-        nothingFound=(len(results) == 0)
+        books=books,
+        term=term
     )
 
 @app.route('/book/<int:book_id>')
@@ -84,7 +81,6 @@ def book_detail(book_id):
         categories=get_categories()
     )
 
-
 @app.errorhandler(Exception)
 def handle_error(e):
     return render_template("error.html", error=e)
@@ -92,4 +88,7 @@ def handle_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
+
+
+
 
